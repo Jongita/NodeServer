@@ -17,7 +17,6 @@ const server=http.createServer((req,res)=>{
        daugiklis=parseInt(url.split("/")[1]);
     }
     
-
     //Išsiunčiame vartotojui kokie duomenys yra persiunčiami
     res.setHeader('Content-Type','text/html; charset=utf-8');
     
@@ -33,10 +32,9 @@ const server=http.createServer((req,res)=>{
     // for(let i=1; i<=10; i++){
     //     res.write(`<a href="/${i}">${i}</a>&nbsp;&nbsp;`);
     // }
-     res.write(`<a href="/${10}">${10+'%'}</a>&nbsp;&nbsp;`);
-     res.write(`<a href="/${30}">${30+'%'}</a>&nbsp;&nbsp;`);
-     res.write(`<a href="/${50}">${50+'%'}</a>&nbsp;&nbsp;`);
-
+    res.write(`<a href="/${10}">${10+'%'}</a>&nbsp;&nbsp;`);
+    res.write(`<a href="/${30}">${30+'%'}</a>&nbsp;&nbsp;`);
+    res.write(`<a href="/${50}">${50+'%'}</a>&nbsp;&nbsp;`);
 
     res.write("<hr>");
     res.write(`<h1>${daugiklis+'%'} Multiplication Table</h1>`);
@@ -47,7 +45,6 @@ const server=http.createServer((req,res)=>{
     //     res.write(`<td>${i}</td><td>*</td><td>${daugiklis}</td><td>=</td><td>${i*daugiklis}</td>`);
     //     res.write("</tr>");
     // }
-   
     
     for (let i=0; i<11; i++){
         res.write("<tr>");
@@ -64,16 +61,12 @@ const server=http.createServer((req,res)=>{
                 } else {
                     res.write(`<td>${y * i}</td>`);
                 }
-               
             }
-            
        }
         res.write("</tr>");
     }
         
-
     res.write("</table>");
-
     res.write("</body>");
     res.write("</html>");
     res.end();
