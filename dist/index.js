@@ -3,69 +3,57 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+// HTTP biblioteka skirta HTTP serveriams
 const http_1 = __importDefault(require("http"));
-//Sukuriame f-ją kuri bus paleista tuomet kai atkeliaus užklausa iš vartotojo
+// Failinės sistemos biblioteka skirta darbui su failais
+const fs_1 = __importDefault(require("fs"));
+//Susikuriame serverio objektą
 const server = http_1.default.createServer((req, res) => {
-    //Vartotojo nuoroda
-    const url = req.url;
-    console.log(url);
-    //Pasiimti metodą
     const method = req.method;
-    console.log(method);
-    //Daugiklio paemimas
-    let daugiklis = 1;
-    if (url != null) {
-        daugiklis = parseInt(url.split("/")[1]);
+    const url = req.url;
+    console.log(`Metodas: ${method}, URL: ${url}`);
+    if (url == '/calculate' && method == 'POST') {
+        //Saugomi duomenų "gabalai"
+        const reqBody = [];
+        //Funkcija kuri iškviečiama kai gaunamas duomenų gabalas
+        req.on('data', (d) => {
+            console.log(`Gaunami duomenys`);
+            console.log(`Duomenys: ${d}`);
+            //Kiekvieną duomenų gabalą įdedame į masyvą
+            reqBody.push(d);
+        });
+        //Funkcija kuri iškviečiama kai baigiami siųsti duomenys (visi duomenų gabalai gauti)
+        req.on('end', () => {
+            console.log(`Baigti siųsti duomenys`);
+            //Sujungiame visus gabalus į vieną sąrašą ir paverčiame į string'ą
+            const reqData = Buffer.concat(reqBody).toString();
+            const va = reqData.split('&');
+            const x = parseFloat(va[0].split('=')[1]);
+            const y = parseFloat(va[1].split('=')[1]);
+            console.log(`Visi gauti duomenys: ${reqData}`);
+            console.log(va);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            //Nuskaitome failą result.html (į buffer tipo kintamąjį, ir paverčiame į stringą)
+            let template = fs_1.default.readFileSync('templates/result.html').toString();
+            //Pakeičiame tekstą template {{ result }} į suskaičiuotą rezultatą 
+            template = template.replace('{{ result }}', `Rezultatas: ${x * y}`);
+            res.write(template);
+            res.end();
+        });
+        return;
     }
-    //Išsiunčiame vartotojui kokie duomenys yra persiunčiami
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    //Siunčiamas dokumentas
-    res.write("<!DOCTYPE html>");
-    res.write("<html>");
-    res.write("<head>");
-    res.write("<title>Multiplication Table</title>");
-    res.write("</head>");
-    res.write("<body>");
-    // for(let i=1; i<=10; i++){
-    //     res.write(`<a href="/${i}">${i}</a>&nbsp;&nbsp;`);
-    // }
-    res.write(`<a href="/${10}">${10 + '%'}</a>&nbsp;&nbsp;`);
-    res.write(`<a href="/${30}">${30 + '%'}</a>&nbsp;&nbsp;`);
-    res.write(`<a href="/${50}">${50 + '%'}</a>&nbsp;&nbsp;`);
-    res.write("<hr>");
-    res.write(`<h1>${daugiklis + '%'} Multiplication Table</h1>`);
-    res.write("<table border='1'>");
-    // for (let i=1; i<=10; i++){
-    //     res.write("<tr>");
-    //     res.write(`<td>${i}</td><td>*</td><td>${daugiklis}</td><td>=</td><td>${i*daugiklis}</td>`);
-    //     res.write("</tr>");
-    // }
-    for (let i = 0; i < 11; i++) {
-        res.write("<tr>");
-        for (let y = 0; y < 11; y++) {
-            if (i == 0 && y == 0) {
-                res.write(`<td></td>`);
-            }
-            else if (i == 0) {
-                res.write(`<td>${y * (i + 1)}</td>`);
-            }
-            else if (y == 0) {
-                res.write(`<td>${i}</td>`);
-            }
-            else {
-                if (Math.random() < daugiklis / 100) {
-                    res.write(`<td></td>`);
-                }
-                else {
-                    res.write(`<td>${y * i}</td>`);
-                }
-            }
-        }
-        res.write("</tr>");
+    if (url == '/') {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        const template = fs_1.default.readFileSync('templates/index.html');
+        res.write(template);
+        return res.end();
     }
-    res.write("</table>");
-    res.write("</body>");
-    res.write("</html>");
-    res.end();
+    //Jei puslapis nebuvo rastas
+    res.writeHead(404, {
+        "Content-Type": "text/html; charset=utf-8"
+    });
+    const template = fs_1.default.readFileSync('templates/404.html');
+    res.write(template);
+    return res.end();
 });
 server.listen(2999, 'localhost');
