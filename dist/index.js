@@ -7,11 +7,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = __importDefault(require("http"));
 // Failinės sistemos biblioteka skirta darbui su failais
 const fs_1 = __importDefault(require("fs"));
+// darbo su keliais biblioteka
+const path_1 = __importDefault(require("path"));
 //Susikuriame serverio objektą
 const server = http_1.default.createServer((req, res) => {
     const method = req.method;
     const url = req.url;
     console.log(`Metodas: ${method}, URL: ${url}`);
+    // susigeneruoti nuoroda iki public katalogo
+    let filePath = `public${url}`;
+    // ar failas egsistuoja
+    // fs.existsSync("kelias iki failo") - patikrina ar failas egzistuoja, jei taip - true.
+    // fs.lstatSync(filePath).isFile() - patikrina ar tai FileSystemWritableFileStream, ne katalogas, nuoroda, irenginys
+    if (fs_1.default.existsSync(filePath) && fs_1.default.lstatSync(filePath).isFile()) {
+        console.log(path_1.default.extname(filePath));
+        const ext = path_1.default.extname(filePath);
+        switch (ext) {
+            case ".css":
+                res.setHeader("Content-Type", "text/css; charset=utf-8");
+                break;
+            case ".js":
+                res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+                break;
+            case ".jpg":
+            case ".png":
+            case ".jpeg":
+                res.setHeader("Content-Type", "image/jpg; charset=utf-8");
+                break;
+        }
+        let file = fs_1.default.readFileSync(filePath);
+        res.write(file);
+        return res.end();
+    }
     if (url == '/calculate' && method == 'POST') {
         //Saugomi duomenų "gabalai"
         const reqBody = [];

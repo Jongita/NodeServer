@@ -4,11 +4,41 @@ import http from 'http';
 // Failinės sistemos biblioteka skirta darbui su failais
 import fs from 'fs';
 
+// darbo su keliais biblioteka
+import path from 'path';
+
 //Susikuriame serverio objektą
 const server=http.createServer((req,res)=>{
     const method=req.method;
     const url=req.url;
     console.log(`Metodas: ${method}, URL: ${url}`);
+
+    // susigeneruoti nuoroda iki public katalogo
+    let filePath = `public${url}`;
+    // ar failas egsistuoja
+    // fs.existsSync("kelias iki failo") - patikrina ar failas egzistuoja, jei taip - true.
+    // fs.lstatSync(filePath).isFile() - patikrina ar tai FileSystemWritableFileStream, ne katalogas, nuoroda, irenginys
+
+    if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()){
+        console.log(path.extname(filePath));
+        const ext=path.extname(filePath);
+        switch (ext) {
+            case ".css":
+                res.setHeader("Content-Type", "text/css; charset=utf-8");
+                break;
+            case ".js":
+                res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+                break;
+            case ".jpg":
+            case ".png":
+            case ".jpeg":
+                res.setHeader("Content-Type", "image/jpg; charset=utf-8");
+                break;
+        }
+        let file=fs.readFileSync(filePath);
+        res.write(file);
+        return res.end();
+    }
 
     if (url=='/calculate' && method=='POST'){
         //Saugomi duomenų "gabalai"
