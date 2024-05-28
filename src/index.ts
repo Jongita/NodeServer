@@ -1,24 +1,58 @@
-// HTTP biblioteka skirta HTTP serveriams
+
+import { Student } from "./models/students";
+
+import mysql from 'mysql2';
+
 import http from 'http';
 
-// Failinės sistemos biblioteka skirta darbui su failais
 import fs from 'fs';
+import path from "path";
 
-// darbo su keliais biblioteka
-import path from 'path';
+// kintamasis kuris rodo ar mes prisijunge prie duomenu bazes
+let connected=false;
 
-//Susikuriame serverio objektą
-const server=http.createServer((req,res)=>{
-    const method=req.method;
-    const url=req.url;
-    console.log(`Metodas: ${method}, URL: ${url}`);
+// si dalis sukuria prisijungima prie duomenu bazes
+const con=mysql.createConnection({
+    host:"localhost",
+    user:"root",
+    password:"Jurgita1981",
+    database:"students"
+});
 
-    // susigeneruoti nuoroda iki public katalogo
-    let filePath = `public${url}`;
-    // ar failas egsistuoja
-    // fs.existsSync("kelias iki failo") - patikrina ar failas egzistuoja, jei taip - true.
-    // fs.lstatSync(filePath).isFile() - patikrina ar tai FileSystemWritableFileStream, ne katalogas, nuoroda, irenginys
+// prisijungia prie duomenu bazes
+// con.connect();
+// con.connect(funkcija kuri bus vykdoma po prisijungimo)
+con.connect((error:any)=>{
+    if (error) throw error;
 
+    // po prisijungimo be klaidos, nustatome jog esame prisijunge prie DB
+    connected=true;
+
+    console.log('Prisijungta');
+
+});
+
+        // sukuriame http serveri ir paduodame f-ja kuri bus vykdoma kai ateis uzklausa
+    const server=http.createServer((req,res)=>{
+        const url=req.url;
+        const method=req.method;
+
+        // jei kazkas atejo i puslapi su GET metodu i url: localhost:2999/students, galime jam issiusti JSON formatu
+    //     if(url=='/students' && method=='GET'){
+    //     if (connected){
+    //     con.query<Student[]>("SELECT * FROM students WHERE sex='vyras';", (error, result) => {
+    //     if(error) throw error;
+    //     res.setHeader("Contect-Type", "text/JSON; charset=utf-8");
+    //     res.write(JSON.stringify(result));
+    //     res.end();
+        
+    // });
+    //     }
+    // }
+
+        // dalis skirta statiniem failam isvesti
+        let filePath = `public${url}`;
+    
     if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()){
         console.log(path.extname(filePath));
         const ext=path.extname(filePath);
@@ -40,60 +74,33 @@ const server=http.createServer((req,res)=>{
         return res.end();
     }
 
-    if (url=='/calculate' && method=='POST'){
-        //Saugomi duomenų "gabalai"
-        const reqBody:any[]=[];
-        //Funkcija kuri iškviečiama kai gaunamas duomenų gabalas
-        req.on('data', (d)=>{
-            console.log(`Gaunami duomenys`);
-            console.log(`Duomenys: ${d}`);
-            //Kiekvieną duomenų gabalą įdedame į masyvą
-            reqBody.push(d);
-        });
 
-        //Funkcija kuri iškviečiama kai baigiami siųsti duomenys (visi duomenų gabalai gauti)
-        req.on('end',()=>{
-            console.log(`Baigti siųsti duomenys`);
-            //Sujungiame visus gabalus į vieną sąrašą ir paverčiame į string'ą
-            const reqData=Buffer.concat(reqBody).toString();
-            const va=reqData.split('&');
-            const x=parseFloat(va[0].split('=')[1]);
-            const y=parseFloat(va[1].split('=')[1]);
-            console.log(`Visi gauti duomenys: ${reqData}`);
-            console.log(va);
 
-            res.setHeader("Content-Type", "text/html; charset=utf-8");
-            //Nuskaitome failą result.html (į buffer tipo kintamąjį, ir paverčiame į stringą)
-            let template=fs.readFileSync('templates/result.html').toString();
-            //Pakeičiame tekstą template {{ result }} į suskaičiuotą rezultatą 
-            template=template.replace('{{ result }}',`Rezultatas: ${x*y}`);
-            res.write(template);
-            res.end();
-        });
-        return;
-    }
 
-    if (url=='/'){
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        const template=fs.readFileSync('templates/index.html');
+
+    // jei kazkas atejo i puslapi su GET metodu i url: localhost:2999/students, galime jam issiusti HTML formatu
+        if(url=='/students' && method=='GET'){
+        if (connected){
+        con.query<Student[]>("SELECT * FROM students;", (error, result) => {
+        if(error) throw error;
+        res.setHeader("Contect-Type", "text/html; charset=utf-8");
+        let rows="";
+        result.forEach((s)=>{
+            rows+="<tr>";
+            rows+=`<td>${s.name}</td> <td>${s.surname} </td> <td>${s.phone}</td> <td> <a href='/student/${s.id}' class="btn btn-success">Plačiau</a></td> `;
+            rows+="</tr>";
+
+        })
+        let template=fs.readFileSync('templates/students.html').toString();
+        template=template.replace(`{{students_table}}`, rows);
         res.write(template);
-        return res.end();
+        res.end();
+        
+    });
+        }
     }
 
+})
 
-    //Jei puslapis nebuvo rastas
-    res.writeHead(404, {
-        "Content-Type":"text/html; charset=utf-8"
-    });
-   
-    const template=fs.readFileSync('templates/404.html');
-    res.write(template);
-    return res.end();
-
-
-
-    
-    
-});
-
-server.listen(2999,'localhost');
+    //paleidziame serveri
+    server.listen(2999, 'localhost');

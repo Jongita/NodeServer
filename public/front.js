@@ -1,1 +1,1 @@
-alert("Veika")
+alert("Veikia")
