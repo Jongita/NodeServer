@@ -76,7 +76,7 @@ const server = http_1.default.createServer((req, res) => {
                 let rows = "";
                 result.forEach((s) => {
                     rows += "<tr>";
-                    rows += `<td>${s.name}</td> <td>${s.surname}</td> <td>${s.phone}</td> <td> <a href='/student/${s.id}' class="btn btn-success">Plačiau</a></td>`;
+                    rows += `<td>${s.name}</td> <td>${s.surname}</td> <td>${s.phone}</td> <td> <a href='/student/${s.id}' class="btn btn-success">Plačiau</a> <a href='/delete/${s.id}' class="btn btn-danger">Ištrinti</a></td>`;
                     rows += "</tr>";
                 });
                 let template = fs_1.default.readFileSync('templates/students.html').toString();
@@ -84,6 +84,45 @@ const server = http_1.default.createServer((req, res) => {
                 res.write(template);
                 res.end();
             });
+        }
+    }
+    // funkcija iskvieciame, kai pridejimo lange paspaudziame submit mygtuka
+    if (url == '/add' && method == 'POST') {
+        if (connected) {
+            // susrinkti duomenis
+            const reqBody = [];
+            req.on('data', (d) => {
+                reqBody.push(d);
+            });
+            req.on('end', () => {
+                const reqData = decodeURIComponent(Buffer.concat(reqBody).toString());
+                const dd = reqData.split('&');
+                console.log(dd);
+                // issiskaldysime duomenis i atskirus kintamuosius
+                const name = mysql2_1.default.escape(dd[0].split('=')[1]);
+                const surname = mysql2_1.default.escape(dd[1].split('=')[1]);
+                const phone = mysql2_1.default.escape(dd[2].split('=')[1]);
+                const sex = mysql2_1.default.escape(dd[3].split('=')[1]);
+                const birthday = mysql2_1.default.escape(dd[4].split('=')[1]);
+                const email = mysql2_1.default.escape(dd[5].split('=')[1]);
+                const sql = `INSERT INTO students(name, surname, phone, sex, birthday, email) VALUES (${name}, ${surname}, ${phone}, ${sex}, ${birthday}, ${email})`;
+                con.query(sql, (error) => {
+                    if (error)
+                        throw error;
+                });
+                res.writeHead(302, {
+                    'Location': '/students'
+                });
+                res.end();
+            });
+        }
+    }
+    // funkcija, kai ateiname i pridejimo langa
+    if (url == '/add' && method == 'GET') {
+        if (connected) {
+            let template = fs_1.default.readFileSync('templates/add.html').toString();
+            res.write(template);
+            res.end();
         }
     }
     //Vieno studento atvaizdavimas, kai url = localhost:2999/student/5
@@ -104,6 +143,18 @@ const server = http_1.default.createServer((req, res) => {
             template = template.replace("{{ email }}", student.email != null ? student.email : '-');
             template = template.replace("{{ birthday }}", student.birthday != null ? student.birthday.toLocaleDateString() : '-');
             res.write(template);
+            res.end();
+        });
+    }
+    if ((url === null || url === void 0 ? void 0 : url.split("/")[1]) == 'delete') {
+        //Pasiimame iš url id
+        let id = parseInt(url === null || url === void 0 ? void 0 : url.split("/")[2]);
+        con.query(`DELETE FROM students WHERE id=${id};`, (error, result) => {
+            if (error)
+                throw error;
+            res.writeHead(302, {
+                'Location': '/students'
+            });
             res.end();
         });
     }
